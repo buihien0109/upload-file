@@ -1,0 +1,14 @@
+aws:
+  s3:
+    endpoint-url: https://s3user10106.s3.cloudstorage.com.vn
+    bucket-name: evtp2-dev
+    access-key: s3user10106
+    secret-key: bfJdWZ+mtyrx8Wui2/dDfDHPJs1IvX0yrRotNzgS
+
+spring:
+  sftp:
+    host: 10.4.1.18
+    port: 22
+    user: viettepostftp
+    password: Viet@#2023telepost
+    remote-directory: /KHTN/VIETTEL_POST_HANGHOA/CLAIM_FILE

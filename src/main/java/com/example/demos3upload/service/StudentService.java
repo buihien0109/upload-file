@@ -1,0 +1,121 @@
+package com.example.demos3upload.service;
+
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.example.demos3upload.model.Student;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opencsv.CSVWriter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class StudentService {
+    private final ObjectMapper objectMapper;
+    private final AmazonS3 s3Client;
+
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+
+    public String uploadFile() {
+        // Create List 3 student
+        List<Student> students = List.of(
+                Student.builder().id(1).name("Alice").age(20).build(),
+                Student.builder().id(2).name("Bob").age(21).build(),
+                Student.builder().id(3).name("Carol").age(22).build()
+        );
+
+        // Tạo dữ liệu CSV từ list
+        byte[] csvData = writeDataToCsv(students);
+        if (csvData == null) {
+            return "Failed to create CSV data";
+        }
+
+
+        // Lưu dữ liệu CSV vào file tạm thời
+        File csvFile;
+        String fileName = UUID.randomUUID() + ".csv";
+        try {
+            csvFile = convert(csvData, fileName);
+        } catch (IOException e) {
+            log.error("Error creating temporary file", e);
+            return "Error creating temporary file";
+        }
+
+        String filePath = formatDateByPattern(new Date(), "yyyy_MM_dd_hh_mm_ss");
+        String keyName = bucketName + "/" + filePath + "/" + fileName;
+        try {
+            String response = uploadFile(csvFile, bucketName, keyName);
+            log.info("Upload response: {}", response);
+            return response;
+        } catch (JsonProcessingException e) {
+            log.error("Error uploading file", e);
+            return "Error uploading file";
+        } finally {
+            // Xóa file tạm sau khi upload xong
+            if (csvFile.exists() && !csvFile.delete()) {
+                log.warn("Failed to delete temporary file: {}", csvFile.getAbsolutePath());
+            }
+        }
+    }
+
+    public String uploadFile(File file, String bucketName, String keyName) throws JsonProcessingException {
+        PutObjectRequest request = new PutObjectRequest(bucketName, keyName, file);
+        PutObjectResult putObjectResult = s3Client.putObject(
+                request.withCannedAcl(CannedAccessControlList.PublicRead));
+        log.info("PutObjectResult Cloud: {}", objectMapper.writeValueAsString(putObjectResult));
+        if (putObjectResult != null) {
+            // Get url file
+            return s3Client.getUrl(bucketName, keyName).toString();
+        }
+        return null;
+    }
+
+    public String formatDateByPattern(Date date, String s) {
+        SimpleDateFormat sdf = new SimpleDateFormat(s);
+        return sdf.format(date);
+    }
+
+    public byte[] writeDataToCsv(List<Student> data) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(byteArrayOutputStream);
+             CSVWriter writer = new CSVWriter(outputStreamWriter, '|', CSVWriter.NO_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END)) {
+
+            // Write data without header
+            for (Student student : data) {
+                String[] csvRow = {String.valueOf(student.getId()), student.getName(), String.valueOf(student.getAge())};
+                writer.writeNext(csvRow);
+            }
+
+            writer.flush();
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public File convert(byte[] fileContent, String fileName) throws IOException {
+        File convFile = new File("hubsub_file", fileName);
+        if (!convFile.getParentFile().exists()) {
+            convFile.getParentFile().mkdirs();
+        }
+        try (FileOutputStream fos = new FileOutputStream(convFile)) {
+            fos.write(fileContent);
+        }
+        return convFile;
+    }
+
+}
