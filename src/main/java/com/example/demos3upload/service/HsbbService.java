@@ -5,7 +5,6 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.example.demos3upload.model.HSBB;
-import com.example.demos3upload.model.Student;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVWriter;
@@ -44,7 +43,6 @@ public class HsbbService {
         if (csvData == null) {
             return "Failed to create CSV data";
         }
-
 
         // Lưu dữ liệu CSV vào file tạm thời
         File csvFile;

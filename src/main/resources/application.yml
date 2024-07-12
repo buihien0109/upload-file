@@ -5,10 +5,18 @@ aws:
     access-key: s3user10106
     secret-key: bfJdWZ+mtyrx8Wui2/dDfDHPJs1IvX0yrRotNzgS
 
+#spring:
+#  sftp:
+#    host: 10.4.1.18
+#    port: 22
+#    user: viettepostftp
+#    password: Viet@#2023telepost
+#    remote-directory: /KHTN/VIETTEL_POST_HANGHOA/CLAIM_FILE
+
 spring:
   sftp:
-    host: 10.4.1.18
+    host: 103.237.144.171
     port: 22
-    user: viettepostftp
-    password: Viet@#2023telepost
-    remote-directory: /KHTN/VIETTEL_POST_HANGHOA/CLAIM_FILE
+    user: admin
+    password: 123456
+    remote-directory: /uploads
